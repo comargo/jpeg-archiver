@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainDialog</class>
+ <widget class="QDialog" name="MainDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>440</width>
+    <height>269</height>
+   </rect>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QFormLayout" name="formLayout">
+     <item row="0" column="0">
+      <widget class="QLabel" name="inputLabel">
+       <property name="text">
+        <string>&amp;Input</string>
+       </property>
+       <property name="buddy">
+        <cstring>inputLineEdit</cstring>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <layout class="QHBoxLayout">
+       <item>
+        <widget class="QLineEdit" name="inputLineEdit"/>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btnInputFileBrowse">
+         <property name="toolTip">
+          <string>Browse input file</string>
+         </property>
+         <property name="icon">
+          <iconset resource="jpeg-archiver.qrc">
+           <normaloff>:/icons/folder-open-image.png</normaloff>:/icons/folder-open-image.png</iconset>
+         </property>
+         <property name="shortcut">
+          <string>Ctrl+O</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btnInputDirBrowse">
+         <property name="toolTip">
+          <string>Browse input folder</string>
+         </property>
+         <property name="icon">
+          <iconset resource="jpeg-archiver.qrc">
+           <normaloff>:/icons/folder-open.png</normaloff>:/icons/folder-open.png</iconset>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="outputLabel">
+       <property name="text">
+        <string>&amp;Output</string>
+       </property>
+       <property name="buddy">
+        <cstring>outputLineEdit</cstring>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <layout class="QHBoxLayout">
+       <item>
+        <widget class="QLineEdit" name="outputLineEdit"/>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btnOutputFileBrowse">
+         <property name="toolTip">
+          <string>Browse output file</string>
+         </property>
+         <property name="icon">
+          <iconset resource="jpeg-archiver.qrc">
+           <normaloff>:/icons/folder-save-image.png</normaloff>:/icons/folder-save-image.png</iconset>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btnOutputDirBrowse">
+         <property name="toolTip">
+          <string>Browse output folder</string>
+         </property>
+         <property name="icon">
+          <iconset resource="jpeg-archiver.qrc">
+           <normaloff>:/icons/folder-save.png</normaloff>:/icons/folder-save.png</iconset>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="qualityLabel">
+       <property name="text">
+        <string>&amp;Quality</string>
+       </property>
+       <property name="buddy">
+        <cstring>qualityComboBox</cstring>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QComboBox" name="qualityComboBox"/>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="stripMetadataLabel">
+       <property name="text">
+        <string>&amp;Strip metadata</string>
+       </property>
+       <property name="buddy">
+        <cstring>stripMetadataCheckBox</cstring>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QCheckBox" name="stripMetadataCheckBox"/>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnExtraOptions">
+       <property name="text">
+        <string>Extra &amp;options...</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QProgressBar" name="progressBar">
+     <property name="value">
+      <number>24</number>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+     <property name="format">
+      <string>%v/%m</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Close|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="jpeg-archiver.qrc"/>
+ </resources>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>MainDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>325</x>
+     <y>259</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>286</x>
+     <y>268</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
