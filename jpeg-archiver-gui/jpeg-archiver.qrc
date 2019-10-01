@@ -4,5 +4,8 @@
         <file>icons/folder-open-image.png</file>
         <file>icons/folder-save.png</file>
         <file>icons/folder-save-image.png</file>
+        <file>icons/cross-circle.png</file>
+        <file>icons/exclamation-circle.png</file>
+        <file>icons/tick-circle.png</file>
     </qresource>
 </RCC>

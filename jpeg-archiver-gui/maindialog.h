@@ -6,6 +6,8 @@
 
 #include "config.h"
 
+class ProcessLogModel;
+
 namespace Ui {
 class MainDialog;
 }
@@ -44,6 +46,7 @@ private:
     QString m_lastOpenDir;
     QString m_lastSaveDir;
     ProcessControllerThread* m_thread;
+    ProcessLogModel* m_logModel;
 
 };
 

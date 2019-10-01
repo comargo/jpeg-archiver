@@ -1,24 +1,12 @@
-cmake_minimum_required(VERSION 3.6)
+cmake_minimum_required(VERSION 3.12)
 
 project(jpeg-archiver)
 
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
 
-if(CMAKE_VERSION VERSION_LESS "3.7.0")
-    set(CMAKE_INCLUDE_CURRENT_DIR ON)
-endif()
+#include(ExternalProject)
+#ExternalProject_Add(jpeg-recompress SOURCE_DIR jpeg-recompress)
 
-find_package(Qt5 COMPONENTS Widgets REQUIRED)
+add_subdirectory(jpeg-recompress)
+add_subdirectory(jpeg-archiver-gui)
+add_subdirectory(jpeg-archiver-cli)
 
-add_executable(${CMAKE_PROJECT_NAME}
-    main.cpp
-    maindialog.cpp
-    maindialog.ui
-    config.cpp
-    processcontrollerthread.cpp
-    jpeg-archiver.qrc
-)
-
-target_link_libraries(${CMAKE_PROJECT_NAME} Qt5::Widgets)

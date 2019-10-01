@@ -9,13 +9,10 @@
 #include <condition_variable>
 #include <thread>
 #include <future>
-#include <chrono>
 
-struct Task {
-    std::shared_ptr<Config> config;
-    QString inputFile;
-    QString outputFile;
-};
+#include "task.h"
+
+const unsigned int MAX_THREAD_NUM = 1;
 
 class ProcessControllerThreadPrivate {
     ProcessControllerThread* q_ptr;
@@ -33,8 +30,7 @@ class ProcessControllerThreadPrivate {
     void addTask(const Task& task);
     void scanDir(const QString &relativePath);
     void process();
-    void processTask(const Task& task);
-
+\
     Q_DECLARE_PUBLIC(ProcessControllerThread)
 
 };
@@ -112,7 +108,8 @@ void ProcessControllerThread::run()
     d->abort = false;
 
     std::list<std::thread> processThreads;
-    for(uint i=0; i<std::thread::hardware_concurrency(); ++i) {
+    uint nThreads = std::min(std::thread::hardware_concurrency(), MAX_THREAD_NUM);
+    for(uint i=0; i<nThreads; ++i) {
         processThreads.emplace_back(&ProcessControllerThreadPrivate::process, d);
     }
 
@@ -141,7 +138,7 @@ void ProcessControllerThread::run()
 
 void ProcessControllerThreadPrivate::addTask(const Task &task)
 {
-    if(!QFileInfo::exists(task.inputFile))
+    if(!QFileInfo::exists(task.inputFile()))
         return;
     std::lock_guard<std::mutex> lock{mtxTaskList};
     taskList.push_back(task);
@@ -154,6 +151,10 @@ void ProcessControllerThreadPrivate::scanDir(const QString &relativePath)
     if(abort)
         return;
     QDir workDir{QDir(input).absoluteFilePath(relativePath)};
+
+    if(workDir.canonicalPath() == QDir(output).canonicalPath())
+        return;
+
     auto fileList = workDir.entryList({"*.jpg", "*.jpeg", "*.JPG"}, QDir::Files|QDir::Readable, QDir::Name);
     auto dirList = workDir.entryList(QDir::Dirs|QDir::NoDotAndDotDot, QDir::Name);
     std::list<std::future<void>> futures;
@@ -174,6 +175,7 @@ void ProcessControllerThreadPrivate::scanDir(const QString &relativePath)
 
 void ProcessControllerThreadPrivate::process()
 {
+    Q_Q(ProcessControllerThread);
     do {
     std::unique_lock<std::mutex> lock(mtxTaskList);
         cvTaskListChanged.wait(lock, [this](){
@@ -185,7 +187,14 @@ void ProcessControllerThreadPrivate::process()
             // release queue
             lock.unlock();
 
-            processTask(task);
+            if(task.process()) {
+                emit q->processed(task.inputFile(), task.quality(), task.inSize(), task.outSize());
+            }
+            else {
+                emit q->skipped(task.inputFile(), task.error());
+            }
+            Q_Q(ProcessControllerThread);
+            emit q->currentProgress(static_cast<int>(++processed));
 
             // lock queue to check if it empty and take another task
             lock.lock();
@@ -195,10 +204,4 @@ void ProcessControllerThreadPrivate::process()
 }
 
 
-void ProcessControllerThreadPrivate::processTask(const Task &task)
-{
-    using namespace std::chrono_literals;
-    std::this_thread::sleep_for(10s);
-    Q_Q(ProcessControllerThread);
-    emit q->currentProgress(static_cast<int>(++processed));
-}
+

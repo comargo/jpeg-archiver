@@ -1,5 +1,6 @@
 #include "maindialog.h"
 #include "processcontrollerthread.h"
+#include "processlogmodel.h"
 #include "ui_maindialog.h"
 
 #include <QFileDialog>
@@ -17,10 +18,10 @@ MainDialog::MainDialog(QWidget *parent) :
     ui(new Ui::MainDialog)
 {
     ui->setupUi(this);
-    ui->qualityComboBox->addItem(tr("Low"), QVariant::fromValue(Config::QualityPreset::Low));
-    ui->qualityComboBox->addItem(tr("Medium"), QVariant::fromValue(Config::QualityPreset::Medium));
-    ui->qualityComboBox->addItem(tr("High"), QVariant::fromValue(Config::QualityPreset::High));
-    ui->qualityComboBox->addItem(tr("Very high"), QVariant::fromValue(Config::QualityPreset::VeryHigh));
+    ui->qualityComboBox->addItem(tr("Low"), QVariant::fromValue(JR_QUALITY_LOW));
+    ui->qualityComboBox->addItem(tr("Medium"), QVariant::fromValue(JR_QUALITY_MEDIUM));
+    ui->qualityComboBox->addItem(tr("High"), QVariant::fromValue(JR_QUALITY_HIGH));
+    ui->qualityComboBox->addItem(tr("Very high"), QVariant::fromValue(JR_QUALITY_VERYHIGH));
 
     ui->progressBar->setValue(0);
     ui->progressBar->setMaximum(1);
@@ -46,10 +47,15 @@ MainDialog::MainDialog(QWidget *parent) :
 
     fromConfig();
 
+    m_logModel = new ProcessLogModel(this);
+    ui->logView->setModel(m_logModel);
+
     m_thread = new ProcessControllerThread(this);
     connect(m_thread, &QThread::finished, this, &MainDialog::onProcessFinished);
     connect(m_thread, &ProcessControllerThread::numberOfFilesChanged, ui->progressBar, &QProgressBar::setMaximum);
     connect(m_thread, &ProcessControllerThread::currentProgress, ui->progressBar, &QProgressBar::setValue);
+    connect(m_thread, &ProcessControllerThread::skipped, m_logModel, &ProcessLogModel::appendError);
+    connect(m_thread, &ProcessControllerThread::processed, m_logModel, &ProcessLogModel::appendSuccess);
 }
 
 MainDialog::~MainDialog()
@@ -83,7 +89,7 @@ void MainDialog::fromConfig()
 
 void MainDialog::toConfig()
 {
-    m_config.setQuality(ui->qualityComboBox->currentData().value<Config::QualityPreset>());
+    m_config.setQuality(ui->qualityComboBox->currentData().value<jpeg_recompress_quality_t>());
     m_config.setStrip(ui->stripMetadataCheckBox->checkState() == Qt::CheckState::Checked);
 }
 
@@ -138,7 +144,7 @@ void MainDialog::onDirBrowse(QLineEdit *lineEdit, const QString &caption, QStrin
     QString selectedDir = QFileDialog::getExistingDirectory(this, caption, *pDir);
     if(selectedDir.isNull())
         return;
-    lineEdit->setText(selectedDir);
+    lineEdit->setText(QDir::toNativeSeparators(selectedDir));
     *pDir = selectedDir;
 }
 
@@ -165,6 +171,7 @@ void MainDialog::processFiles()
     m_thread->setConfig(m_config);
     m_thread->setInput(QDir::fromNativeSeparators(ui->inputLineEdit->text()));
     m_thread->setOutput(QDir::fromNativeSeparators(ui->outputLineEdit->text()));
+    m_logModel->clear();
 
     m_thread->start();
 }

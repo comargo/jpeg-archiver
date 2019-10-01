@@ -35,6 +35,8 @@ protected:
 signals:
     void numberOfFilesChanged(int num);
     void currentProgress(int num);
+    void processed(QString fileName, int quality, int inSize, int outSize);
+    void skipped(QString fileName, QString reason);
 
 private:
     Q_DECLARE_PRIVATE(ProcessControllerThread)
