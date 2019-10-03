@@ -1,6 +1,8 @@
 #include "jpeg-recompress.h"
 
 #include <stddef.h>
+#include <stdint.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <memory.h>
 #include <string.h>

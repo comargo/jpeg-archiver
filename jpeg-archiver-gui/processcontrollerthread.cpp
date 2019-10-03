@@ -9,10 +9,11 @@
 #include <condition_variable>
 #include <thread>
 #include <future>
+#include <functional>
 
 #include "task.h"
 
-const unsigned int MAX_THREAD_NUM = 1;
+const unsigned int MAX_THREAD_NUM = UINT_MAX;
 
 class ProcessControllerThreadPrivate {
     ProcessControllerThread* q_ptr;

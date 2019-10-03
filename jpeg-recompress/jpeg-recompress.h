@@ -1,6 +1,7 @@
 #ifndef JPEG_RECOMPRESS_H
 #define JPEG_RECOMPRESS_H
 
+#include <stddef.h>
 #include <stdbool.h>
 #include "image_compare.h"
 

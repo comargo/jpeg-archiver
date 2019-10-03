@@ -9,3 +9,6 @@ add_library(iqa STATIC
     source/psnr.c
     source/ssim.c)
 target_include_directories(iqa PUBLIC include)
+if(UNIX)
+target_link_libraries(iqa PUBLIC m)
+endif()

@@ -9,6 +9,7 @@ if(CMAKE_VERSION VERSION_LESS "3.7.0")
 endif()
 
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
+find_package (Threads)
 
 add_executable(jpeg-archiver
     main.cpp
@@ -20,5 +21,5 @@ add_executable(jpeg-archiver
     jpeg-archiver.qrc
     processlogmodel.cpp
 )
-
-target_link_libraries(${CMAKE_PROJECT_NAME} Qt5::Widgets jpeg-recompress)
+set_property(TARGET jpeg-archiver PROPERTY CXX_STANDARD 11)
+target_link_libraries(jpeg-archiver Qt5::Widgets jpeg-recompress ${CMAKE_THREAD_LIBS_INIT})

@@ -19,4 +19,4 @@ double image_compare(const void *image1, const void *image2,
 #ifdef __cplusplus
 }
 #endif
-#endif IMAGE_COMPARE_H
+#endif//IMAGE_COMPARE_H
