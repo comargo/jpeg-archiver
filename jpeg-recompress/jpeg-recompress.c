@@ -79,6 +79,7 @@ void destroy_marker_list(jpeg_saved_marker_ptr marker_list)
     if(marker_list == NULL)
         return;
     destroy_marker_list(marker_list->next);
+    free(marker_list->data);
     free(marker_list);
 }
 
@@ -158,6 +159,11 @@ int jpeg_recompress(const void *in_jpeg, size_t in_jpeg_size, const struct jpeg_
 
 
     for(unsigned int attempt = 0; attempt<config->attempts; ++attempt) {
+	if(compressed) {
+	  free(compressed);
+	  compressed=NULL;
+	  compressed_size = 0;
+	}
         jpeg_mem_dest(&cinfo, &compressed, &compressed_size);
         double metric;
         quality = (jpeg_min + jpeg_max)/2;

@@ -29,7 +29,6 @@ bool Task::process()
         return false;
     }
     QByteArray inputBuffer = inputJpeg.readAll();
-    QByteArray outputBuffer = inputBuffer;
     unsigned char *output_buf = nullptr;
     size_t output_buf_size = 0;
     int quality = jpeg_recompress(inputBuffer.data(), static_cast<size_t>(inputBuffer.size()), *m_config, &output_buf, &output_buf_size);
@@ -37,8 +36,6 @@ bool Task::process()
         m_error = QCoreApplication::translate("Task","File already processed");
         return false;
     }
-    outputBuffer = QByteArray{reinterpret_cast<char*>(output_buf), static_cast<int>(output_buf_size)};
-    ::free(output_buf);
     if(!QFileInfo(m_outputFile).dir().exists()) {
         QFileInfo(m_outputFile).dir().mkpath(".");
     }
@@ -47,10 +44,11 @@ bool Task::process()
         m_error = outputJpeg.errorString();
         return false;
     }
-    outputJpeg.write(outputBuffer);
+    outputJpeg.write(reinterpret_cast<const char*>(output_buf), static_cast<qint64>(output_buf_size));
     m_inSize = inputBuffer.size();
-    m_outSize = outputBuffer.size();
+    m_outSize = static_cast<int>(output_buf_size);
     m_quality = quality;
+    ::free(output_buf);
     return true;
 }
 

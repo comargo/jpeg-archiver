@@ -19,8 +19,8 @@ bool process_file(const char *inPath, const char *outPath, unsigned int nAttempt
     size_t inFileSize = (size_t)ftell(inFile);
     rewind(inFile);
 
-    unsigned char *inBuf = malloc(inFileSize);
-    fread(inBuf, 1, inFileSize, inFile);
+    unsigned char *inBuffer = malloc(inFileSize);
+    fread(inBuffer, 1, inFileSize, inFile);
     fclose(inFile);
 
     struct jpeg_recompress_config_t config;
@@ -30,11 +30,11 @@ bool process_file(const char *inPath, const char *outPath, unsigned int nAttempt
 
     unsigned char *outBuffer = NULL;
     size_t outBufferSize = 0;
-    int quality = jpeg_recompress(inBuf, inFileSize, &config, &outBuffer, &outBufferSize);
+    int quality = jpeg_recompress(inBuffer, inFileSize, &config, &outBuffer, &outBufferSize);
 
     if(!outBufferSize) {
         fprintf(stderr, "SKIP %s\n", inPath);
-        free(inBuf);
+        free(inBuffer);
         return false;
     }
 
@@ -49,12 +49,14 @@ bool process_file(const char *inPath, const char *outPath, unsigned int nAttempt
     FILE* outFile = fopen(outPath, "wb");
     if(!outFile) {
         fprintf(stderr, "ERR  %s %s\n", inPath, strerror(errno));
-        free(inBuf);
+        free(inBuffer);
         free(outBuffer);
         return false;
     }
     fwrite(outBuffer, 1, outBufferSize, outFile);
     fclose(outFile);
+    free(inBuffer);
+    free(outBuffer);
     return true;
 }
 
