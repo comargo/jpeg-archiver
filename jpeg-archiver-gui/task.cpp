@@ -3,7 +3,6 @@
 #include <QFile>
 #include <QByteArray>
 #include <jpeg-recompress.h>
-#include <jpeglib.h>
 #include <QFileInfo>
 #include <QCoreApplication>
 #include <QDir>
