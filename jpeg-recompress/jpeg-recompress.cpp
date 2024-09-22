@@ -1,13 +1,16 @@
 #include "jpeg-recompress.h"
 
+#include "jpeglib_cpp.h"
+
 #include <stddef.h>
-#include <stdint.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <memory.h>
 #include <string.h>
 #include <stdio.h>
 #include <jpeglib.h>
+#include <stdexcept>
+#include <vector>
 
 #ifndef MIN
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -17,6 +20,7 @@
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #endif
 
+using vector_byte = std::vector<unsigned char>;
 static const char *COMMENT = "Compressed by jpeg-recompress";
 
 double jr_get_default_target(enum jpeg_recompress_quality_t quality, enum image_compare_method_t method)
@@ -32,43 +36,39 @@ double jr_get_default_target(enum jpeg_recompress_quality_t quality, enum image_
     return default_targets[method][quality];
 }
 
-
-static size_t decompress_jpeg(struct jpeg_decompress_struct *dinfo, const void *in_jpeg, size_t in_jpeg_size,
-                              J_COLOR_SPACE out_color_space, unsigned char *output_image)
-{
+static vector_byte decompress_jpeg(struct jpeg_decompress_struct *dinfo,
+                                   const unsigned char *in_jpeg,
+                                   size_t in_jpeg_size,
+                                   J_COLOR_SPACE out_color_space) {
     JSAMPARRAY buffer;
 
     jpeg_mem_src(dinfo, in_jpeg, (unsigned long)in_jpeg_size);
     jpeg_read_header(dinfo, TRUE);
     dinfo->out_color_space = out_color_space;
     jpeg_start_decompress(dinfo);
-    size_t row_stride = dinfo->output_width*((unsigned int)dinfo->output_components);
-    if(output_image) {
-        buffer = (*dinfo->mem->alloc_sarray)
-                ((j_common_ptr) dinfo, JPOOL_IMAGE, (JDIMENSION)row_stride, 1);
-        if(!output_image)
-            output_image = malloc(row_stride*dinfo->output_height);
-        while (dinfo->output_scanline < dinfo->output_height) {
-            jpeg_read_scanlines(dinfo, buffer,1);
-            memcpy(output_image+(dinfo->output_scanline-1)*row_stride, buffer[0], row_stride);
-        }
-        jpeg_finish_decompress(dinfo);
+    size_t row_stride =
+        dinfo->output_width * ((unsigned int)dinfo->output_components);
+    vector_byte output_image(row_stride*dinfo->output_height);
+    buffer = (*dinfo->mem->alloc_sarray)((j_common_ptr)dinfo, JPOOL_IMAGE,
+                                         (JDIMENSION)row_stride, 1);
+    while (dinfo->output_scanline < dinfo->output_height) {
+        jpeg_read_scanlines(dinfo, buffer, 1);
+        memcpy(output_image.data() + (dinfo->output_scanline - 1) * row_stride,
+               buffer[0], row_stride);
     }
-    else {
-        jpeg_abort_decompress(dinfo);
-    }
-    return row_stride;
+    jpeg_finish_decompress(dinfo);
+    return output_image;
 }
 
 jpeg_saved_marker_ptr copy_marker_list(jpeg_saved_marker_ptr marker_list)
 {
     if(marker_list == NULL)
         return NULL;
-    jpeg_saved_marker_ptr new_list = malloc(sizeof(struct jpeg_marker_struct));
+    jpeg_saved_marker_ptr new_list = (jpeg_saved_marker_ptr)malloc(sizeof(struct jpeg_marker_struct));
     new_list->marker = marker_list->marker;
     new_list->original_length = marker_list->original_length;
     new_list->data_length = marker_list->data_length;
-    new_list->data = malloc(marker_list->data_length);
+    new_list->data = (JOCTET*)malloc(marker_list->data_length);
     memcpy(new_list->data, marker_list->data, marker_list->data_length);
     new_list->next = copy_marker_list(marker_list->next);
     return new_list;
@@ -83,15 +83,27 @@ void destroy_marker_list(jpeg_saved_marker_ptr marker_list)
     free(marker_list);
 }
 
-int jpeg_recompress(const void *in_jpeg, size_t in_jpeg_size, const struct jpeg_recompress_config_t *config,
+static void error_exit(j_common_ptr cinfo)
+{
+    char buffer[JMSG_LENGTH_MAX];
+
+    /* Create the message */
+    (*cinfo->err->format_message) (cinfo, buffer);
+
+    /* Let the memory manager delete any temp files before we die */
+    jpeg_destroy(cinfo);
+    throw std::runtime_error(buffer);
+}
+
+int jpeg_recompress(const unsigned char *in_jpeg, size_t in_jpeg_size, const struct jpeg_recompress_config_t *config,
                     unsigned char **out_jpeg, size_t *out_jpeg_size)
 {
     unsigned int quality = 0;
 
-    struct jpeg_decompress_struct dinfo;
     struct jpeg_error_mgr err;
-    dinfo.err = jpeg_std_error(&err);
-    jpeg_create_decompress(&dinfo);
+    jpeg_std_error(&err);
+    err.error_exit = &error_exit;
+    struct jpeg_decompress_struct_RAII dinfo(err);
 
     jpeg_save_markers(&dinfo, JPEG_COM, UINT_MAX);
     for(int i=0; i<16; ++i) {
@@ -127,7 +139,7 @@ int jpeg_recompress(const void *in_jpeg, size_t in_jpeg_size, const struct jpeg_
 
         if(config->copy) {
             if(out_jpeg) {
-                *out_jpeg = malloc(in_jpeg_size);
+                *out_jpeg = (unsigned char*)malloc(in_jpeg_size);
                 memcpy(*out_jpeg, in_jpeg, in_jpeg_size);
             }
             if(out_jpeg_size) {
@@ -137,26 +149,17 @@ int jpeg_recompress(const void *in_jpeg, size_t in_jpeg_size, const struct jpeg_
         return  0;
     }
 
-    size_t rgb_row_stride = decompress_jpeg(&dinfo, in_jpeg, in_jpeg_size, JCS_RGB, NULL);
-    unsigned char *original_rgb = malloc(dinfo.output_height*rgb_row_stride);
-    decompress_jpeg(&dinfo, in_jpeg, in_jpeg_size, JCS_RGB, original_rgb);
-
-    size_t gray_row_stride = decompress_jpeg(&dinfo, in_jpeg, in_jpeg_size, JCS_GRAYSCALE, NULL);
-    unsigned char *original_grayscale = malloc(dinfo.output_height*gray_row_stride);
-    decompress_jpeg(&dinfo, in_jpeg, in_jpeg_size, JCS_GRAYSCALE, original_grayscale);
+    vector_byte original_rgb = decompress_jpeg(&dinfo, in_jpeg, in_jpeg_size, JCS_RGB);
+    vector_byte original_grayscale = decompress_jpeg(&dinfo, in_jpeg, in_jpeg_size, JCS_GRAYSCALE);
 
     unsigned char* compressed = NULL;
     size_t compressed_buf_size = 0;
     unsigned long compressed_size = 0;
-    unsigned char *decompressed = malloc(gray_row_stride*dinfo.output_height);
 
     unsigned int jpeg_min = config->quality_min;
     unsigned int jpeg_max = config->quality_max;
 
-    struct jpeg_compress_struct cinfo;
-    cinfo.err = jpeg_std_error(&err);
-    jpeg_create_compress(&cinfo);
-
+    struct jpeg_compress_struct_RAII cinfo(err);
 
     for(unsigned int attempt = 0; attempt<config->attempts; ++attempt) {
         if(compressed) {
@@ -200,16 +203,14 @@ int jpeg_recompress(const void *in_jpeg, size_t in_jpeg_size, const struct jpeg_
         }
         JSAMPROW row_pointer[1];
         while (cinfo.next_scanline < cinfo.image_height) {
-            row_pointer[0] = &original_rgb[cinfo.next_scanline * rgb_row_stride];
+            row_pointer[0] = &original_rgb[cinfo.next_scanline * cinfo.image_width * cinfo.input_components];
             (void) jpeg_write_scanlines(&cinfo, row_pointer, 1);
         }
         jpeg_finish_compress(&cinfo);
-        compressed_buf_size = compressed_size + cinfo.dest->free_in_buffer;
 
+        vector_byte decompressed = decompress_jpeg(&dinfo, compressed, compressed_size, JCS_GRAYSCALE);
 
-        decompress_jpeg(&dinfo, compressed, compressed_size, JCS_GRAYSCALE, decompressed);
-
-        metric = image_compare(original_grayscale, decompressed,
+        metric = image_compare(original_grayscale.data(), decompressed.data(),
                                dinfo.output_width, dinfo.output_height, config->method);
 
         if(metric < config->target) {
@@ -260,13 +261,7 @@ int jpeg_recompress(const void *in_jpeg, size_t in_jpeg_size, const struct jpeg_
     else {
         free(compressed);
     }
-    free(decompressed);
-
-    free(original_grayscale);
-    free(original_rgb);
     destroy_marker_list(marker_list.next);
-    jpeg_destroy_decompress(&dinfo);
-    jpeg_destroy_compress(&cinfo);
     return quality;
 }
 

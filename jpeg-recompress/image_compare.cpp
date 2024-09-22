@@ -2,8 +2,9 @@
 
 #include <stdlib.h>
 
-#include "ssim.h"
+extern "C" {
 #include <iqa.h>
+}
 
 static double smallfry_metric(const void *image1, const void *image2,
                               unsigned int width, unsigned int height)
@@ -17,7 +18,7 @@ static double mean_pixel_error_metric(const void *image1, const void *image2,
     return 0;
 }
 
-double image_compare(const void *image1, const void *image2,
+double image_compare(const unsigned char *image1, const unsigned char *image2,
                      unsigned int width, unsigned int height,
                      enum image_compare_method_t method)
 {

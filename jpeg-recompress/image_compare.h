@@ -12,7 +12,7 @@ enum image_compare_method_t {
     IC_METHOD_MPE
 };
 
-double image_compare(const void *image1, const void *image2,
+double image_compare(const unsigned char *image1, const unsigned char *image2,
                      unsigned int width, unsigned int height,
                      enum image_compare_method_t method);
 

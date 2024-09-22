@@ -32,7 +32,7 @@ void jr_default_config(struct jpeg_recompress_config_t *config);
 
 double jr_get_default_target(enum jpeg_recompress_quality_t quality, enum image_compare_method_t method);
 
-int jpeg_recompress(const void *in_jpeg, size_t in_jpeg_size, const struct jpeg_recompress_config_t *config,
+int jpeg_recompress(const unsigned char *in_jpeg, size_t in_jpeg_size, const struct jpeg_recompress_config_t *config,
                              unsigned char **out_jpeg, size_t *out_jpeg_size);
 
 

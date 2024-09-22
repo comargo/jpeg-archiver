@@ -1,25 +1,28 @@
+cmake_minimum_required(VERSION 3.16)
 project(jpeg-archiver-gui)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-if(CMAKE_VERSION VERSION_LESS "3.7.0")
-    set(CMAKE_INCLUDE_CURRENT_DIR ON)
-endif()
+find_package(Qt6 COMPONENTS Widgets Concurrent REQUIRED)
+qt_standard_project_setup()
 
-find_package(Qt5 COMPONENTS Widgets REQUIRED)
-find_package (Threads)
 
-add_executable(jpeg-archiver
+qt_add_executable(jpeg-archiver WIN32
     main.cpp
+    maindialog.h
     maindialog.cpp
     maindialog.ui
+    config.h
     config.cpp
-    task.cpp
-    processcontrollerthread.cpp
     jpeg-archiver.qrc
+    processlogmodel.h
     processlogmodel.cpp
 )
-set_property(TARGET jpeg-archiver PROPERTY CXX_STANDARD 11)
-target_link_libraries(jpeg-archiver Qt5::Widgets jpeg-recompress ${CMAKE_THREAD_LIBS_INIT})
+set_target_properties(jpeg-archiver PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON)
+target_link_libraries(jpeg-archiver PRIVATE Qt6::Widgets Qt6::Concurrent jpeg-recompress)
+
+install(TARGETS jpeg-archiver)
